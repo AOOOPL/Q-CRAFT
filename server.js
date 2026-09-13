@@ -15,7 +15,8 @@ app.get('/', (req, res) => {
 app.post('/api/analyze-blueprint', async (req, res) => {
   try {
     const imageBase64 = req.body.imageBase64 || req.body.image || req.body.imageData || req.body.data;
- 
+ const prompt = req.body.prompt || "Analyze this floor plan blueprint and return the 3D dimensions and elements structure";
+
 
     if (!imageBase64) {
       return res.status(400).json({ error: 'No image provided' });

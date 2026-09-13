@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 app.get('/', (req, res) => {
-  res.json({ status: 'ok', service: 'Q-CRAFT API Backend', time: new Date().toISOString() });
+  res.json({ status: 'ok', service: 'Q-CRAFT API Backend', model: process.env.GEMINI_MODEL || 'gemini-2.5-flash', time: new Date().toISOString() });
 });
 
 app.post('/api/analyze-blueprint', async (req, res) => {
@@ -25,8 +25,9 @@ app.post('/api/analyze-blueprint', async (req, res) => {
       return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server' });
     }
 
+    const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: modelName });
 
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
@@ -59,4 +60,5 @@ app.post('/api/analyze-blueprint', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Q-CRAFT Backend running on port ${PORT}`);
 });
+
 

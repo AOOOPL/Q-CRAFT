@@ -14,7 +14,8 @@ app.get('/', (req, res) => {
 
 app.post('/api/analyze-blueprint', async (req, res) => {
   try {
-    const { imageBase64, prompt } = req.body;
+    const imageBase64 = req.body.imageBase64 || req.body.image || req.body.imageData || req.body.data;
+ 
 
     if (!imageBase64) {
       return res.status(400).json({ error: 'No image provided' });

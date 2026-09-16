@@ -12,7 +12,7 @@ app.get('/', (req, res) => {
   res.json({
     status: 'ok',
     service: 'Q-CRAFT API Backend',
-    model: process.env.GEMINI_MODEL || '3.5-flash-lite',
+    model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
     time: new Date().toISOString()
   });
 });
@@ -47,7 +47,7 @@ async function analyzeWithGemini(req, res) {
       });
     }
 
-    const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: modelName });
 

@@ -12,7 +12,7 @@ app.get('/', (req, res) => {
   res.json({
     status: 'ok',
     service: 'Q-CRAFT API Backend',
-    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    model: process.env.GEMINI_MODEL || '3.5-flash-lite',
     time: new Date().toISOString()
   });
 });

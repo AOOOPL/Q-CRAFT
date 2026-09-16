@@ -9,58 +9,103 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 app.get('/', (req, res) => {
-  res.json({ status: 'ok', service: 'Q-CRAFT API Backend', model: process.env.GEMINI_MODEL || 'gemini-2.5-flash', time: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    service: 'Q-CRAFT API Backend',
+    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+    time: new Date().toISOString()
+  });
 });
 
-app.post('/api/analyze-blueprint', async (req, res) => {
+async function analyzeWithGemini(req, res) {
   try {
-    const imageBase64 = req.body.imageBase64 || req.body.image || req.body.imageData || req.body.data;
- const prompt = req.body.prompt || "Analyze this floor plan blueprint and return the 3D dimensions and elements structure";
+    const image =
+      req.body.image ||
+      req.body.imageBase64 ||
+      req.body.imageData ||
+      req.body.data;
 
+    const prompt =
+      req.body.prompt ||
+      'Analyze this interior design or floor plan image and return only a JSON array of measurable editable CAD objects. Use millimetres. Every object should include type, width, length, z_height, z_elevation, shape, confidence, and source. If dimensions are not visible, mark source as standard or estimated.';
 
-    if (!imageBase64) {
-      return res.status(400).json({ error: 'No image provided' });
+    if (!image) {
+      return res.status(400).json({
+        error: {
+          message: 'No image was provided.'
+        }
+      });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
+
     if (!apiKey) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server' });
+      return res.status(503).json({
+        error: {
+          message: 'GEMINI_API_KEY is not configured on the server.'
+        }
+      });
     }
 
     const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: modelName });
 
-    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    const cleanImage = image.replace(
+      /^data:image\/[^;]+;base64,/,
+      ''
+    );
+
+    const mimeMatch = image.match(/^data:(image\/[^;]+);base64,/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
 
     const imagePart = {
       inlineData: {
-        data: cleanBase64,
-        mimeType: 'image/jpeg'
+        data: cleanImage,
+        mimeType
       }
     };
 
-    const userPrompt = prompt || 'قم بتحليل هذه المخططات الهندسية/المعمارية بالتفصيل واستخراج الكميات والمواصفات.';
+    const result = await model.generateContent([
+      prompt,
+      imagePart
+    ]);
 
-    const result = await model.generateContent([userPrompt, imagePart]);
-    const responseText = result.response.text();
+    const text = result.response.text();
 
-    res.json({
-      success: true,
-      analysis: responseText
+    return res.json({
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                text
+              }
+            ]
+          }
+        }
+      ],
+      model: modelName
     });
-
   } catch (error) {
-    console.error('Error analyzing blueprint:', error);
-    res.status(500).json({
-      error: 'Failed to analyze blueprint',
-      details: error.message
+    console.error('Gemini analysis error:', error);
+
+    return res.status(502).json({
+      error: {
+        message: error.message || 'Gemini analysis failed.'
+      }
     });
   }
-});
+}
 
-app.listen(PORT, () => {
+app.post('/api/gemini/analyze', analyzeWithGemini);
+
+// إبقاء المسار القديم يعمل أيضًا
+app.post('/api/analyze-blueprint', analyzeWithGemini);
+
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Q-CRAFT Backend running on port ${PORT}`);
 });
+
 
 
